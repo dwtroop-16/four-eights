@@ -466,3 +466,48 @@
   border-color: #fff8e1;
   box-shadow: 0 0 0 2px #c49a57, 0 0 40px rgba(196, 154, 87, 0.4);
 }
+
+.pausedOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 13, 9, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.pausedCard {
+  background: rgba(10, 24, 16, 0.98);
+  border: 1px solid #c49a57;
+  border-radius: 16px;
+  padding: 40px 48px;
+  max-width: 460px;
+  text-align: center;
+  color: #f1e7d0;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+}
+
+.pausedIcon {
+  font-size: 56px;
+  margin-bottom: 8px;
+  color: #c49a57;
+}
+
+.pausedCard h2 {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 36px;
+  margin: 0 0 12px;
+  font-weight: 600;
+  color: #fff8e1;
+}
+
+.pausedCard p {
+  font-family: 'EB Garamond', serif;
+  font-size: 17px;
+  line-height: 1.55;
+  margin: 0 0 24px;
+  color: rgba(241, 231, 208, 0.85);
+}

@@ -13,6 +13,9 @@ const {
   setDecision,
   drawCards,
   applyTimeout,
+  pauseGame,
+  resumeGame,
+  leaveRoom,
   viewForPlayer,
   PHASE,
   TURN_TIMEOUT_MS,
@@ -42,18 +45,18 @@ function scheduleTurnTimer(io, roomId) {
   const existing = roomTimers.get(roomId);
   if (existing) clearTimeout(existing);
   const room = rooms.get(roomId);
-  if (!room || !room.turnDeadline) {
+  if (!room || room.paused || !room.turnDeadline) {
     roomTimers.delete(roomId);
     return;
   }
   const ms = Math.max(0, room.turnDeadline - Date.now());
   const handle = setTimeout(() => {
     const r = rooms.get(roomId);
-    if (!r) return;
+    if (!r || r.paused) return;
     applyTimeout(r);
     broadcastRoom(io, roomId);
     if (r.turnDeadline) scheduleTurnTimer(io, roomId);
-  }, ms + 50); // small buffer
+  }, ms + 50);
   roomTimers.set(roomId, handle);
 }
 
@@ -160,6 +163,55 @@ app.prepare().then(() => {
       } catch (e) {
         ack && ack({ ok: false, error: e.message });
       }
+    });
+
+    socket.on('room:pause', (_, ack) => {
+      const ref = socketToPlayer.get(socket.id);
+      if (!ref) return ack && ack({ ok: false, error: 'Not in a room.' });
+      const room = rooms.get(ref.roomId);
+      try {
+        pauseGame(room, ref.playerId);
+        // Cancel pending timeout so it doesn't fire mid-pause.
+        const t = roomTimers.get(ref.roomId);
+        if (t) clearTimeout(t);
+        roomTimers.delete(ref.roomId);
+        ack && ack({ ok: true });
+        broadcastRoom(io, ref.roomId);
+      } catch (e) {
+        ack && ack({ ok: false, error: e.message });
+      }
+    });
+
+    socket.on('room:resume', (_, ack) => {
+      const ref = socketToPlayer.get(socket.id);
+      if (!ref) return ack && ack({ ok: false, error: 'Not in a room.' });
+      const room = rooms.get(ref.roomId);
+      try {
+        resumeGame(room, ref.playerId);
+        ack && ack({ ok: true });
+        broadcastRoom(io, ref.roomId);
+        scheduleTurnTimer(io, ref.roomId);
+      } catch (e) {
+        ack && ack({ ok: false, error: e.message });
+      }
+    });
+
+    socket.on('room:leave', (_, ack) => {
+      const ref = socketToPlayer.get(socket.id);
+      if (!ref) return ack && ack({ ok: false, error: 'Not in a room.' });
+      const room = rooms.get(ref.roomId);
+      if (room) {
+        leaveRoom(room, ref.playerId);
+        if (room.players.length === 0) {
+          cleanupRoom(ref.roomId);
+        } else {
+          broadcastRoom(io, ref.roomId);
+          scheduleTurnTimer(io, ref.roomId);
+        }
+      }
+      socketToPlayer.delete(socket.id);
+      socket.leave(ref.roomId);
+      ack && ack({ ok: true });
     });
 
     socket.on('disconnect', () => {

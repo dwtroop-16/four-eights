@@ -6,6 +6,7 @@ import Seat from '../components/Seat';
 import Avatar from '../components/Avatar';
 import AvatarPicker from '../components/AvatarPicker';
 import TurnTimer from '../components/TurnTimer';
+import TopBar from '../components/TopBar';
 import styles from '../styles/Table.module.css';
 
 const DEFAULT_AVATAR = { kind: 'preset', emoji: '🦊', color: '#c49a57' };
@@ -24,6 +25,49 @@ export default function Home() {
     s.on('room:update', setRoom);
     return () => s.off('room:update', setRoom);
   }, []);
+
+  // Auto-fill join code from ?join=XXXX query parameter (used by Copy Invite links).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('join');
+    if (code) setJoinCode(code.toUpperCase());
+  }, []);
+
+  async function leaveCurrentRoom() {
+    if (!me) return;
+    await emitWithAck(getSocket(), 'room:leave', {});
+    setMe(null);
+    setRoom(null);
+    setSelectedDiscards(new Set());
+    setError(null);
+  }
+
+  async function returnHome() {
+    await leaveCurrentRoom();
+    // Clear ?join= from URL if present
+    if (typeof window !== 'undefined') {
+      window.history.replaceState({}, '', '/');
+    }
+    setJoinCode('');
+  }
+
+  async function switchRoom() {
+    await leaveCurrentRoom();
+    // Keep them on the lobby — they'll type a new code or paste one.
+    if (typeof window !== 'undefined') {
+      window.history.replaceState({}, '', '/');
+    }
+    setJoinCode('');
+  }
+
+  async function togglePause() {
+    if (!room) return;
+    const event = room.paused ? 'room:resume' : 'room:pause';
+    const res = await emitWithAck(getSocket(), event, {});
+    if (!res.ok) setError(res.error);
+  }
+
 
   async function createMulti() {
     setError(null);
@@ -85,8 +129,10 @@ export default function Home() {
   // ---------- LOBBY ----------
   if (!me || !room) {
     return (
-      <div className={styles.lobby}>
-        <div className={styles.lobbyCard}>
+      <>
+        <TopBar inRoom={false} />
+        <div className={styles.lobby}>
+          <div className={styles.lobbyCard}>
           <h1 className={styles.title}>Fours <span className={styles.amp}>&amp;</span> Eights</h1>
           <p className={styles.tagline}>A wild-card game of nerve and rollover.</p>
 
@@ -144,8 +190,9 @@ export default function Home() {
               <li>Solo Practice puts you head-to-head with the Bitch every hand.</li>
             </ul>
           </details>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -165,8 +212,36 @@ export default function Home() {
   const activePlayer = room.players.find((p) => p.id === room.activePlayerId);
 
   return (
-    <div className={styles.table}>
-      <header className={styles.header}>
+    <>
+      <TopBar
+        inRoom={true}
+        isHost={isHost}
+        paused={!!room.paused}
+        phase={phase}
+        roomId={room.roomId}
+        onReturnHome={returnHome}
+        onSwitchRoom={switchRoom}
+        onPauseToggle={togglePause}
+      />
+      <div className={styles.table}>
+        {room.paused && (
+          <div className={styles.pausedOverlay}>
+            <div className={styles.pausedCard}>
+              <div className={styles.pausedIcon}>⏸</div>
+              <h2>Game Paused</h2>
+              <p>
+                The host has paused the round. All actions are frozen until
+                the host resumes.
+              </p>
+              {isHost && (
+                <button className={styles.primary} onClick={togglePause}>
+                  Resume the game
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        <header className={styles.header}>
         <div>
           <div className={styles.gameTitle}>Fours &amp; Eights</div>
           <div className={styles.roomCode}>
@@ -316,6 +391,7 @@ export default function Home() {
         </div>
         {error && <div className={styles.error}>{error}</div>}
       </section>
-    </div>
+      </div>
+    </>
   );
 }

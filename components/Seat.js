@@ -39,7 +39,13 @@ export default function Seat({ player, isYou, isHost, isDealer, isActive, turnDe
       <div className={styles.footer}>
         {!player.connected && <span className={styles.disc}>Disconnected</span>}
         {decisionBadge}
-        {player.hasDrawn && phase === 'DRAW' && <span className={styles.drawn}>Drew</span>}
+        {player.hasDrawn && player.discardCount != null && (phase === 'DRAW' || phase === 'SHOWDOWN' || phase === 'SETTLE') && (
+          <span className={styles.discardBadge}>
+            {player.discardCount === 0
+              ? 'Stood pat'
+              : `Swapped ${player.discardCount}`}
+          </span>
+        )}
       </div>
     </div>
   );
