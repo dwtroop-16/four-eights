@@ -1,0 +1,371 @@
+.lobby {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(ellipse at top, #1d4632 0%, #0a1f15 60%, #050d09 100%);
+}
+
+.lobbyCard {
+  background: rgba(10, 24, 16, 0.85);
+  border: 1px solid rgba(196, 154, 87, 0.4);
+  border-radius: 18px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 440px;
+  color: #f1e7d0;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+.title {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 48px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+
+.amp {
+  font-style: italic;
+  color: #c49a57;
+}
+
+.tagline {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-style: italic;
+  color: rgba(241, 231, 208, 0.7);
+  margin: 0 0 28px;
+  font-size: 16px;
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+.field label {
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(241, 231, 208, 0.6);
+  margin-bottom: 6px;
+}
+
+.field input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(196, 154, 87, 0.3);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: 'EB Garamond', serif;
+  font-size: 17px;
+  color: #f1e7d0;
+  outline: none;
+  transition: border-color 150ms;
+}
+
+.field input:focus {
+  border-color: #c49a57;
+}
+
+.primary,
+.secondary,
+.in,
+.out {
+  width: 100%;
+  padding: 13px 18px;
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  transition: transform 100ms, box-shadow 150ms;
+}
+
+.primary {
+  background: #c49a57;
+  color: #14110a;
+  box-shadow: 0 6px 18px rgba(196, 154, 87, 0.4);
+}
+
+.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(196, 154, 87, 0.55);
+}
+
+.secondary {
+  background: transparent;
+  color: #c49a57;
+  border: 1px solid #c49a57;
+}
+
+.in {
+  background: #2c8a4a;
+  color: #fff;
+  width: auto;
+  padding: 13px 28px;
+}
+
+.out {
+  background: #6b0f1a;
+  color: #fff;
+  width: auto;
+  padding: 13px 28px;
+}
+
+.divider {
+  text-align: center;
+  margin: 18px 0;
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  color: rgba(241, 231, 208, 0.5);
+  position: relative;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: rgba(196, 154, 87, 0.25);
+}
+
+.divider::before { left: 0; }
+.divider::after { right: 0; }
+
+.error {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(179, 20, 42, 0.15);
+  border: 1px solid rgba(179, 20, 42, 0.5);
+  border-radius: 8px;
+  color: #e57c8a;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+}
+
+.rules {
+  margin-top: 28px;
+  font-family: 'EB Garamond', serif;
+  color: rgba(241, 231, 208, 0.8);
+}
+
+.rules summary {
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #c49a57;
+}
+
+.rules ul {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.rules em {
+  color: #c49a57;
+  font-style: italic;
+}
+
+/* ---------- TABLE ---------- */
+
+.table {
+  min-height: 100vh;
+  padding: 24px 32px 32px;
+  background:
+    radial-gradient(ellipse at center top, #1d4632 0%, #0c2418 65%, #050d09 100%);
+  color: #f1e7d0;
+  font-family: 'Inter', sans-serif;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(196, 154, 87, 0.2);
+}
+
+.gameTitle {
+  font-family: 'EB Garamond', serif;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.roomCode {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: rgba(241, 231, 208, 0.55);
+  letter-spacing: 0.1em;
+}
+
+.potBox {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid #c49a57;
+  border-radius: 12px;
+  padding: 10px 22px;
+  text-align: center;
+  min-width: 110px;
+}
+
+.potLabel {
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: #c49a57;
+}
+
+.potValue {
+  font-family: 'EB Garamond', serif;
+  font-size: 32px;
+  font-weight: 600;
+  color: #fff8e1;
+  line-height: 1.1;
+}
+
+.carry {
+  font-size: 11px;
+  color: rgba(196, 154, 87, 0.8);
+  margin-top: 2px;
+}
+
+.opponents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 28px;
+  justify-content: center;
+}
+
+.waiting {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 17px;
+  padding: 30px;
+  color: rgba(241, 231, 208, 0.7);
+  border: 1px dashed rgba(196, 154, 87, 0.3);
+  border-radius: 14px;
+}
+
+.waiting strong {
+  font-family: 'JetBrains Mono', monospace;
+  font-style: normal;
+  color: #c49a57;
+  font-size: 18px;
+  letter-spacing: 0.1em;
+}
+
+.bitchArea {
+  text-align: center;
+  margin-bottom: 24px;
+  min-height: 60px;
+}
+
+.bitchLabel {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 18px;
+  color: #c49a57;
+  margin-bottom: 10px;
+  letter-spacing: 0.05em;
+}
+
+.bitchHand {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.result {
+  text-align: center;
+  margin: 24px auto;
+  max-width: 600px;
+  padding: 20px 24px;
+  background: rgba(196, 154, 87, 0.1);
+  border: 1px solid rgba(196, 154, 87, 0.4);
+  border-radius: 12px;
+}
+
+.result h2 {
+  font-family: 'EB Garamond', serif;
+  font-size: 26px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: #fff8e1;
+}
+
+.resultDetail {
+  font-size: 14px;
+  color: rgba(241, 231, 208, 0.85);
+  line-height: 1.5;
+}
+
+.you {
+  margin-top: 32px;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(196, 154, 87, 0.3);
+  border-radius: 16px;
+}
+
+.youHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
+}
+
+.youName {
+  font-family: 'EB Garamond', serif;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.hostStar { color: #c49a57; }
+
+.youChips {
+  font-family: 'JetBrains Mono', monospace;
+  color: #c49a57;
+  font-size: 14px;
+}
+
+.yourHand {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  min-height: 130px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.emptyHand {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  color: rgba(241, 231, 208, 0.5);
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.waitingNote {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  color: rgba(241, 231, 208, 0.6);
+  padding: 14px;
+}

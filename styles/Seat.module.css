@@ -1,0 +1,98 @@
+.seat {
+  background: rgba(8, 28, 18, 0.72);
+  border: 1px solid rgba(196, 154, 87, 0.25);
+  border-radius: 14px;
+  padding: 14px 16px;
+  min-width: 260px;
+  color: #f1e7d0;
+  backdrop-filter: blur(6px);
+}
+
+.you {
+  border-color: #c49a57;
+  box-shadow: 0 0 0 1px #c49a57, 0 10px 30px rgba(196, 154, 87, 0.18);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+  font-family: 'EB Garamond', Georgia, serif;
+}
+
+.name {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.youTag {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+.hostTag {
+  color: #c49a57;
+  margin-left: 6px;
+}
+
+.chips {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: #c49a57;
+}
+
+.hand {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  transform-origin: center;
+  transform: scale(0.55);
+  height: 70px;
+  align-items: center;
+  justify-content: center;
+}
+
+.miniWrap {
+  flex-shrink: 0;
+}
+
+.footer {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.in {
+  background: rgba(127, 199, 119, 0.18);
+  color: #7fc777;
+  border: 1px solid rgba(127, 199, 119, 0.4);
+}
+
+.out {
+  background: rgba(179, 20, 42, 0.18);
+  color: #e57c8a;
+  border: 1px solid rgba(179, 20, 42, 0.4);
+}
+
+.pending {
+  background: rgba(196, 154, 87, 0.12);
+  color: #c49a57;
+  border: 1px solid rgba(196, 154, 87, 0.3);
+}
+
+.drawn {
+  color: rgba(241, 231, 208, 0.6);
+}
