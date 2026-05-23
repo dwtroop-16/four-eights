@@ -3,12 +3,18 @@ import { useEffect, useState } from 'react';
 import { getSocket, emitWithAck } from '../lib/socketClient';
 import Card from '../components/Card';
 import Seat from '../components/Seat';
+import Avatar from '../components/Avatar';
+import AvatarPicker from '../components/AvatarPicker';
+import TurnTimer from '../components/TurnTimer';
 import styles from '../styles/Table.module.css';
+
+const DEFAULT_AVATAR = { kind: 'preset', emoji: '🦊', color: '#c49a57' };
 
 export default function Home() {
   const [room, setRoom] = useState(null);
-  const [me, setMe] = useState(null); // { roomId, playerId }
+  const [me, setMe] = useState(null);
   const [name, setName] = useState('');
+  const [avatar, setAvatar] = useState(DEFAULT_AVATAR);
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState(null);
   const [selectedDiscards, setSelectedDiscards] = useState(new Set());
@@ -19,20 +25,30 @@ export default function Home() {
     return () => s.off('room:update', setRoom);
   }, []);
 
-  async function createRoom() {
+  async function createMulti() {
     setError(null);
-    const s = getSocket();
-    const res = await emitWithAck(s, 'room:create', { name: name || 'Host' });
+    const res = await emitWithAck(getSocket(), 'room:create', {
+      name: name || 'Host', avatar, mode: 'multi',
+    });
+    if (res.ok) setMe({ roomId: res.roomId, playerId: res.playerId });
+    else setError(res.error);
+  }
+
+  async function createSolo() {
+    setError(null);
+    const res = await emitWithAck(getSocket(), 'room:create', {
+      name: name || 'Player', avatar, mode: 'solo',
+    });
     if (res.ok) setMe({ roomId: res.roomId, playerId: res.playerId });
     else setError(res.error);
   }
 
   async function joinRoom() {
     setError(null);
-    const s = getSocket();
-    const res = await emitWithAck(s, 'room:join', {
+    const res = await emitWithAck(getSocket(), 'room:join', {
       roomId: joinCode.toUpperCase(),
       name: name || 'Player',
+      avatar,
     });
     if (res.ok) setMe({ roomId: res.roomId, playerId: res.playerId });
     else setError(res.error);
@@ -40,23 +56,20 @@ export default function Home() {
 
   async function startRound() {
     setError(null);
-    const s = getSocket();
-    const res = await emitWithAck(s, 'round:start', {});
+    const res = await emitWithAck(getSocket(), 'round:start', {});
     if (!res.ok) setError(res.error);
   }
 
   async function decide(decision) {
     setError(null);
     setSelectedDiscards(new Set());
-    const s = getSocket();
-    const res = await emitWithAck(s, 'player:decide', { decision });
+    const res = await emitWithAck(getSocket(), 'player:decide', { decision });
     if (!res.ok) setError(res.error);
   }
 
   async function submitDraw() {
     setError(null);
-    const s = getSocket();
-    const res = await emitWithAck(s, 'player:draw', {
+    const res = await emitWithAck(getSocket(), 'player:draw', {
       discardIds: Array.from(selectedDiscards),
     });
     if (res.ok) setSelectedDiscards(new Set());
@@ -65,8 +78,7 @@ export default function Home() {
 
   function toggleDiscard(cardId) {
     const next = new Set(selectedDiscards);
-    if (next.has(cardId)) next.delete(cardId);
-    else next.add(cardId);
+    if (next.has(cardId)) next.delete(cardId); else next.add(cardId);
     setSelectedDiscards(next);
   }
 
@@ -75,10 +87,9 @@ export default function Home() {
     return (
       <div className={styles.lobby}>
         <div className={styles.lobbyCard}>
-          <h1 className={styles.title}>
-            Fours <span className={styles.amp}>&amp;</span> Eights
-          </h1>
+          <h1 className={styles.title}>Fours <span className={styles.amp}>&amp;</span> Eights</h1>
           <p className={styles.tagline}>A wild-card game of nerve and rollover.</p>
+
           <div className={styles.field}>
             <label>Your name</label>
             <input
@@ -88,34 +99,49 @@ export default function Home() {
               maxLength={20}
             />
           </div>
-          <button className={styles.primary} onClick={createRoom}>
-            Open a Table
-          </button>
-          <div className={styles.divider}>or</div>
+
           <div className={styles.field}>
-            <label>Room code</label>
+            <label>Your avatar</label>
+            <AvatarPicker value={avatar} onChange={setAvatar} />
+          </div>
+
+          <div className={styles.modeRow}>
+            <button className={styles.primary} onClick={createMulti}>
+              Open a Table
+            </button>
+            <button className={styles.secondary} onClick={createSolo}>
+              Solo Practice
+            </button>
+          </div>
+
+          <div className={styles.divider}>or join one</div>
+
+          <div className={styles.joinRow}>
             <input
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
               placeholder="ABC123"
               maxLength={6}
+              className={styles.joinInput}
             />
+            <button className={styles.joinBtn} onClick={joinRoom}>Join</button>
           </div>
-          <button className={styles.secondary} onClick={joinRoom}>
-            Join a Table
-          </button>
+
           {error && <div className={styles.error}>{error}</div>}
+
           <details className={styles.rules}>
             <summary>House rules</summary>
             <ul>
               <li>4s and 8s are wild.</li>
               <li>Each player antes 1 chip and is dealt 4 cards.</li>
-              <li>Choose IN or OUT after seeing your hand.</li>
-              <li>If you stay IN, you may discard and redraw any number.</li>
+              <li>Turn order rotates left each round.</li>
+              <li>You have 30 seconds to choose IN or OUT. Time out = OUT.</li>
+              <li>IN-players take turns discarding and redrawing any number.</li>
               <li>Best hand wins: four of a kind &gt; three &gt; pair.</li>
               <li>Ties broken by drawing the top card.</li>
-              <li>Losing IN-players each owe the pot amount into next round.</li>
-              <li>If only one player stays IN, they face <em>The Bitch</em> — top 5 cards. She can hit five of a kind, beating four aces.</li>
+              <li>Losing IN-players owe the pot amount into the next round.</li>
+              <li>One lone IN-player faces <em>The Bitch</em> — top 5 cards. She can hit five of a kind, beating four aces.</li>
+              <li>Solo Practice puts you head-to-head with the Bitch every hand.</li>
             </ul>
           </details>
         </div>
@@ -128,47 +154,71 @@ export default function Home() {
   const others = room.players.filter((p) => p.id !== me.playerId);
   const isHost = room.hostId === me.playerId;
   const phase = room.phase;
-  const inDecision = phase === 'DECISION' && youPlayer?.decision === 'PENDING';
-  const inDraw = phase === 'DRAW' && youPlayer?.decision === 'IN' && !youPlayer.hasDrawn;
+  const isYourTurn = room.activePlayerId === me.playerId;
+  const inDecision = phase === 'DECISION' && isYourTurn;
+  const inDraw = phase === 'DRAW' && isYourTurn && !youPlayer?.hasDrawn;
   const showResult = (phase === 'SHOWDOWN' || phase === 'SETTLE') && room.lastResult;
+  const isSoloMode = room.mode === 'solo';
+  const dealerId = room.seatOrder[room.dealerIndex];
+
+  // Active player's name for waiting message
+  const activePlayer = room.players.find((p) => p.id === room.activePlayerId);
 
   return (
     <div className={styles.table}>
       <header className={styles.header}>
         <div>
           <div className={styles.gameTitle}>Fours &amp; Eights</div>
-          <div className={styles.roomCode}>Room {room.roomId} · Round {room.round}</div>
+          <div className={styles.roomCode}>
+            {isSoloMode ? 'Solo Practice' : `Room ${room.roomId}`} · Round {room.round || '—'}
+          </div>
         </div>
         <div className={styles.potBox}>
           <div className={styles.potLabel}>POT</div>
           <div className={styles.potValue}>{room.pot}</div>
-          {room.carryPot > 0 && (
-            <div className={styles.carry}>+{room.carryPot} carry</div>
-          )}
+          {room.carryPot > 0 && <div className={styles.carry}>+{room.carryPot} carry</div>}
         </div>
       </header>
 
-      <section className={styles.opponents}>
-        {others.map((p) => (
-          <Seat key={p.id} player={p} isHost={p.id === room.hostId} phase={phase} />
-        ))}
-        {others.length === 0 && (
-          <div className={styles.waiting}>
-            Share room code <strong>{room.roomId}</strong> with friends.
-          </div>
-        )}
-      </section>
+      {!isSoloMode && (
+        <section className={styles.opponents}>
+          {others.map((p) => (
+            <Seat
+              key={p.id}
+              player={p}
+              isHost={p.id === room.hostId}
+              isDealer={p.id === dealerId}
+              isActive={room.activePlayerId === p.id}
+              turnDeadline={room.activePlayerId === p.id ? room.turnDeadline : null}
+              phase={phase}
+            />
+          ))}
+          {others.length === 0 && (
+            <div className={styles.waiting}>
+              Share room code <strong>{room.roomId}</strong> to invite players (2-10 total).
+            </div>
+          )}
+        </section>
+      )}
 
       <section className={styles.bitchArea}>
         {room.bitchHand && (
           <>
             <div className={styles.bitchLabel}>The Bitch</div>
             <div className={styles.bitchHand}>
-              {room.bitchHand.map((c, i) => (
-                <Card key={i} card={c} />
-              ))}
+              {room.bitchHand.map((c, i) => <Card key={i} card={c} />)}
             </div>
           </>
+        )}
+        {!room.bitchHand && phase !== 'WAITING' && !isYourTurn && activePlayer && (
+          <div className={styles.waitingTurn}>
+            Waiting on <strong>{activePlayer.name}</strong>…
+            {room.turnDeadline && (
+              <span className={styles.timerInline}>
+                <TurnTimer deadline={room.turnDeadline} />
+              </span>
+            )}
+          </div>
         )}
       </section>
 
@@ -193,8 +243,8 @@ export default function Home() {
               <span>
                 {' '}Rollover next round:{' '}
                 {Object.entries(room.lastResult.rolloverOwed).map(([id, amt]) => {
-                  const name = room.players.find((p) => p.id === id)?.name || 'Player';
-                  return `${name} owes ${amt}`;
+                  const n = room.players.find((p) => p.id === id)?.name || 'Player';
+                  return `${n} owes ${amt}`;
                 }).join(', ')}.
               </span>
             )}
@@ -202,13 +252,22 @@ export default function Home() {
         </section>
       )}
 
-      <section className={styles.you}>
+      <section className={`${styles.you} ${isYourTurn ? styles.yourTurn : ''}`}>
         <div className={styles.youHeader}>
-          <span className={styles.youName}>
-            {youPlayer?.name} {isHost && <span className={styles.hostStar}>★</span>}
-          </span>
-          <span className={styles.youChips}>{youPlayer?.chips} chips</span>
+          <Avatar avatar={youPlayer?.avatar} size="md" />
+          <div className={styles.youInfo}>
+            <div className={styles.youName}>
+              {youPlayer?.name}
+              {isHost && <span className={styles.hostStar}> ★</span>}
+              {dealerId === me.playerId && <span className={styles.dealerStar}> D</span>}
+            </div>
+            <div className={styles.youChips}>{youPlayer?.chips} chips</div>
+          </div>
+          {isYourTurn && room.turnDeadline && (
+            <TurnTimer deadline={room.turnDeadline} />
+          )}
         </div>
+
         <div className={styles.yourHand}>
           {(youPlayer?.hand || []).map((c) => (
             <Card
@@ -237,12 +296,8 @@ export default function Home() {
           )}
           {inDecision && (
             <>
-              <button className={styles.in} onClick={() => decide('IN')}>
-                Stay IN
-              </button>
-              <button className={styles.out} onClick={() => decide('OUT')}>
-                Fold OUT
-              </button>
+              <button className={styles.in} onClick={() => decide('IN')}>Stay IN</button>
+              <button className={styles.out} onClick={() => decide('OUT')}>Fold OUT</button>
             </>
           )}
           {inDraw && (
@@ -252,10 +307,10 @@ export default function Home() {
                 : `Discard ${selectedDiscards.size} & draw`}
             </button>
           )}
-          {phase === 'DECISION' && youPlayer?.decision !== 'PENDING' && (
-            <div className={styles.waitingNote}>Waiting on other players…</div>
+          {phase === 'DECISION' && !isYourTurn && (
+            <div className={styles.waitingNote}>It's not your turn yet.</div>
           )}
-          {phase === 'DRAW' && (youPlayer?.decision === 'OUT' || youPlayer?.hasDrawn) && (
+          {phase === 'DRAW' && !isYourTurn && (
             <div className={styles.waitingNote}>Waiting on draws…</div>
           )}
         </div>

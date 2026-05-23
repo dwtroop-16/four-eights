@@ -1,9 +1,19 @@
-<<<<<<< HEAD
 # Fours & Eights
 
 A real-time multiplayer card game where 4s and 8s are wild and the pot escalates.
 Best four-of-a-kind wins, ties are settled by drawing the top card, and a lone
 holdout plays against The Bitch — who can hit five of a kind.
+
+## What's in v2
+
+- **30-second turn timer.** Time out and you fold OUT (or stand pat on a draw).
+- **Custom avatars.** Pick from 16 emoji + 8 colors, or upload an image (needs
+  Supabase Storage).
+- **Solo Practice mode.** Open a 1-player room and play head-to-head against
+  The Bitch every hand.
+- **2-10 players** per multiplayer room.
+- **Game continues if players leave.** Auto-fold, host transfer, no stalling.
+- **Dealer rotates left each round.** Turn order rotates with it.
 
 ## Stack
 
@@ -91,7 +101,3 @@ the Supabase SQL editor.
 See **DEPLOY.md**. The short version: Vercel doesn't run persistent WebSocket
 servers, so deploy the Socket.io process to Render or Railway and point
 `NEXT_PUBLIC_SOCKET_URL` at it from Vercel — or host the whole thing on Render.
-=======
-# four-eights
-four-eights
->>>>>>> 7fcfb35f4b07af999be16f1221a43a95b88a05f6

@@ -369,3 +369,100 @@
   color: rgba(241, 231, 208, 0.6);
   padding: 14px;
 }
+
+.modeRow {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.modeRow .primary,
+.modeRow .secondary {
+  flex: 1;
+  width: auto;
+}
+
+.joinRow {
+  display: flex;
+  gap: 8px;
+}
+
+.joinInput {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(196, 154, 87, 0.3);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  letter-spacing: 0.15em;
+  color: #f1e7d0;
+  text-transform: uppercase;
+  outline: none;
+}
+
+.joinInput:focus {
+  border-color: #c49a57;
+}
+
+.joinBtn {
+  background: transparent;
+  color: #c49a57;
+  border: 1px solid #c49a57;
+  padding: 0 22px;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.waitingTurn {
+  text-align: center;
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 17px;
+  color: rgba(241, 231, 208, 0.85);
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.waitingTurn strong {
+  color: #c49a57;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.timerInline {
+  display: inline-flex;
+  align-items: center;
+}
+
+.youHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.youInfo { flex: 1; }
+
+.dealerStar {
+  font-family: 'JetBrains Mono', monospace;
+  color: #c49a57;
+  font-size: 14px;
+  margin-left: 4px;
+  border: 1px solid #c49a57;
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+.yourTurn {
+  border-color: #fff8e1;
+  box-shadow: 0 0 0 2px #c49a57, 0 0 40px rgba(196, 154, 87, 0.4);
+}

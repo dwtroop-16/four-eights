@@ -1,15 +1,4 @@
-// server/index.js
-// Custom Node.js + Next.js + Socket.io server for 4s and 8s.
-//
-// IMPORTANT DEPLOYMENT NOTE: Vercel's serverless functions do NOT support
-// long-lived WebSocket connections. For production you have two options:
-//   1) Deploy the Next.js frontend to Vercel, and deploy THIS server file
-//      to Render, Railway, Fly.io, or any host that runs a persistent
-//      Node process. Set NEXT_PUBLIC_SOCKET_URL in Vercel to point at it.
-//   2) Run the whole thing on Render/Railway as one Node process (this
-//      file serves both Next.js and Socket.io).
-// See DEPLOY.md for the full walkthrough.
-
+// server/index.js — v2 with timers, solo mode, avatars
 const { createServer } = require('http');
 const next = require('next');
 const { Server } = require('socket.io');
@@ -18,12 +7,15 @@ const { randomUUID } = require('crypto');
 const {
   createRoom,
   addPlayer,
-  removePlayer,
+  disconnectPlayer,
+  setAvatar,
   startRound,
   setDecision,
   drawCards,
+  applyTimeout,
   viewForPlayer,
   PHASE,
+  TURN_TIMEOUT_MS,
 } = require('../lib/game');
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -31,60 +23,104 @@ const port = parseInt(process.env.PORT || '3000', 10);
 const app = next({ dev });
 const nextHandler = app.getRequestHandler();
 
-// In-memory room store. For production with multiple server instances,
-// back this with Supabase or Redis. See lib/persistence.js.
-const rooms = new Map(); // roomId -> room state
-const socketToPlayer = new Map(); // socket.id -> { roomId, playerId }
+const rooms = new Map();
+const socketToPlayer = new Map();
+const roomTimers = new Map(); // roomId -> setTimeout handle for active turn deadline
 
 function broadcastRoom(io, roomId) {
   const room = rooms.get(roomId);
   if (!room) return;
-  // Send each socket a player-specific view (hides other players' hands).
   for (const [socketId, ref] of socketToPlayer.entries()) {
     if (ref.roomId !== roomId) continue;
-    const view = viewForPlayer(room, ref.playerId);
-    io.to(socketId).emit('room:update', view);
+    io.to(socketId).emit('room:update', viewForPlayer(room, ref.playerId));
   }
+}
+
+// Schedule a server-side timeout that fires when the active turn deadline
+// passes. Clears any previous timer for the room.
+function scheduleTurnTimer(io, roomId) {
+  const existing = roomTimers.get(roomId);
+  if (existing) clearTimeout(existing);
+  const room = rooms.get(roomId);
+  if (!room || !room.turnDeadline) {
+    roomTimers.delete(roomId);
+    return;
+  }
+  const ms = Math.max(0, room.turnDeadline - Date.now());
+  const handle = setTimeout(() => {
+    const r = rooms.get(roomId);
+    if (!r) return;
+    applyTimeout(r);
+    broadcastRoom(io, roomId);
+    if (r.turnDeadline) scheduleTurnTimer(io, roomId);
+  }, ms + 50); // small buffer
+  roomTimers.set(roomId, handle);
+}
+
+function cleanupRoom(roomId) {
+  const t = roomTimers.get(roomId);
+  if (t) clearTimeout(t);
+  roomTimers.delete(roomId);
+  rooms.delete(roomId);
 }
 
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => nextHandler(req, res));
-  const io = new Server(httpServer, {
-    cors: { origin: '*' },
-  });
+  const io = new Server(httpServer, { cors: { origin: '*' } });
 
   io.on('connection', (socket) => {
-    socket.on('room:create', ({ name }, ack) => {
+    socket.on('room:create', ({ name, avatar, mode }, ack) => {
+      const safeMode = mode === 'solo' ? 'solo' : 'multi';
       const roomId = randomUUID().slice(0, 6).toUpperCase();
       const playerId = randomUUID();
-      const room = createRoom(roomId, playerId);
-      addPlayer(room, playerId, name || 'Player');
+      const room = createRoom(roomId, playerId, safeMode);
+      try {
+        addPlayer(room, playerId, name || 'Host', avatar);
+      } catch (e) {
+        return ack && ack({ ok: false, error: e.message });
+      }
       rooms.set(roomId, room);
       socketToPlayer.set(socket.id, { roomId, playerId });
       socket.join(roomId);
-      ack && ack({ ok: true, roomId, playerId });
+      ack && ack({ ok: true, roomId, playerId, mode: safeMode });
       broadcastRoom(io, roomId);
     });
 
-    socket.on('room:join', ({ roomId, name }, ack) => {
+    socket.on('room:join', ({ roomId, name, avatar }, ack) => {
       const room = rooms.get(roomId);
-      if (!room) {
-        ack && ack({ ok: false, error: 'Room not found.' });
-        return;
+      if (!room) return ack && ack({ ok: false, error: 'Room not found.' });
+      if (room.mode === 'solo') {
+        return ack && ack({ ok: false, error: 'This is a solo practice room.' });
       }
       const playerId = randomUUID();
-      addPlayer(room, playerId, name || 'Player');
+      try {
+        addPlayer(room, playerId, name || 'Player', avatar);
+      } catch (e) {
+        return ack && ack({ ok: false, error: e.message });
+      }
       socketToPlayer.set(socket.id, { roomId, playerId });
       socket.join(roomId);
-      ack && ack({ ok: true, roomId, playerId });
+      ack && ack({ ok: true, roomId, playerId, mode: room.mode });
       broadcastRoom(io, roomId);
+    });
+
+    socket.on('player:avatar', ({ avatar }, ack) => {
+      const ref = socketToPlayer.get(socket.id);
+      if (!ref) return ack && ack({ ok: false, error: 'Not in a room.' });
+      const room = rooms.get(ref.roomId);
+      try {
+        setAvatar(room, ref.playerId, avatar);
+        ack && ack({ ok: true });
+        broadcastRoom(io, ref.roomId);
+      } catch (e) {
+        ack && ack({ ok: false, error: e.message });
+      }
     });
 
     socket.on('round:start', (_, ack) => {
       const ref = socketToPlayer.get(socket.id);
       if (!ref) return ack && ack({ ok: false, error: 'Not in a room.' });
       const room = rooms.get(ref.roomId);
-      if (!room) return ack && ack({ ok: false, error: 'Room missing.' });
       if (room.hostId !== ref.playerId) {
         return ack && ack({ ok: false, error: 'Only the host may start a round.' });
       }
@@ -92,6 +128,7 @@ app.prepare().then(() => {
         startRound(room);
         ack && ack({ ok: true });
         broadcastRoom(io, ref.roomId);
+        scheduleTurnTimer(io, ref.roomId);
       } catch (e) {
         ack && ack({ ok: false, error: e.message });
       }
@@ -105,6 +142,7 @@ app.prepare().then(() => {
         setDecision(room, ref.playerId, decision);
         ack && ack({ ok: true });
         broadcastRoom(io, ref.roomId);
+        scheduleTurnTimer(io, ref.roomId);
       } catch (e) {
         ack && ack({ ok: false, error: e.message });
       }
@@ -118,6 +156,7 @@ app.prepare().then(() => {
         drawCards(room, ref.playerId, discardIds || []);
         ack && ack({ ok: true });
         broadcastRoom(io, ref.roomId);
+        scheduleTurnTimer(io, ref.roomId);
       } catch (e) {
         ack && ack({ ok: false, error: e.message });
       }
@@ -128,17 +167,13 @@ app.prepare().then(() => {
       if (!ref) return;
       const room = rooms.get(ref.roomId);
       if (room) {
-        // If a round is in progress, mark the player OUT rather than yanking
-        // them mid-hand. If WAITING, remove cleanly.
-        if (room.phase === PHASE.WAITING) {
-          removePlayer(room, ref.playerId);
+        disconnectPlayer(room, ref.playerId);
+        if (room.players.length === 0) {
+          cleanupRoom(ref.roomId);
         } else {
-          const p = room.players.find((p) => p.id === ref.playerId);
-          if (p && p.decision === 'PENDING') p.decision = 'OUT';
+          broadcastRoom(io, ref.roomId);
+          scheduleTurnTimer(io, ref.roomId);
         }
-        // Clean up empty rooms.
-        if (room.players.length === 0) rooms.delete(ref.roomId);
-        else broadcastRoom(io, ref.roomId);
       }
       socketToPlayer.delete(socket.id);
     });
