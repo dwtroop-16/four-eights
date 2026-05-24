@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <!--
+    Fours & Eights — compact mark (monogram only, no tagline)
+    For app icons, favicons, and any context where the full logo is too detailed.
+    The 4 & 8 reads at any size.
+  -->
+  <defs>
+    <linearGradient id="gold-vertical" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#ffe9a8"/>
+      <stop offset="50%"  stop-color="#c49a57"/>
+      <stop offset="100%" stop-color="#5e451d"/>
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="800" rx="150" ry="150" fill="#0c2418"/>
+  
+  <!-- Inner gold ring (very subtle) -->
+  <rect x="50" y="50" width="700" height="700" rx="115" ry="115"
+        fill="none" stroke="#c49a57" stroke-width="2" opacity="0.5"/>
+  
+  <g font-family="EB Garamond, Georgia, serif" text-anchor="middle" fill="url(#gold-vertical)">
+    <text x="240" y="510" font-size="360" font-weight="600">4</text>
+    <text x="400" y="515" font-size="290" font-weight="400" font-style="italic">&amp;</text>
+    <text x="560" y="510" font-size="360" font-weight="600">8</text>
+  </g>
+</svg>
