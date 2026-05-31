@@ -183,11 +183,17 @@
 
 .table {
   min-height: 100vh;
-  padding: 24px 32px 32px;
+  padding: 24px 360px 32px 32px;
   background:
     radial-gradient(ellipse at center top, #1d4632 0%, #0c2418 65%, #050d09 100%);
   color: #f1e7d0;
   font-family: 'Inter', sans-serif;
+}
+
+@media (max-width: 900px) {
+  .table {
+    padding: 24px 24px 32px;
+  }
 }
 
 .header {

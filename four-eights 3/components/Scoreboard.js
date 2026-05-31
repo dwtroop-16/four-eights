@@ -62,10 +62,21 @@ export default function Scoreboard({ players, ledger, collapsed, onToggleCollaps
       </header>
 
       {!hasAnyEntries && (
-        <div className={styles.empty}>
-          <p>No rounds settled yet.</p>
-          <p className={styles.emptyHint}>Play a hand to see the ledger fill in.</p>
-        </div>
+        <>
+          <div className={styles.empty}>
+            <p>No rounds settled yet.</p>
+            <p className={styles.emptyHint}>Current chip stacks:</p>
+          </div>
+          <div className={styles.netList}>
+            {allPlayers.map((p) => (
+              <div key={p.id} className={styles.netRow}>
+                <Avatar avatar={p.avatar} size="sm" />
+                <span className={styles.netName}>{p.name}</span>
+                <span className={styles.netValue}>{p.chips}</span>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {hasAnyEntries && (
