@@ -1,0 +1,34 @@
+.wrap {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  display: inline-block;
+}
+
+.svg { display: block; }
+
+.ring {
+  transition: stroke-dashoffset 100ms linear;
+}
+
+.label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  font-weight: 600;
+  color: #c49a57;
+}
+
+.label.danger {
+  color: #e57c8a;
+  animation: pulse 600ms ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}

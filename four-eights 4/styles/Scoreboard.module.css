@@ -1,0 +1,269 @@
+.panel {
+  position: fixed;
+  top: 60px;
+  right: 16px;
+  width: 320px;
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
+  background: rgba(10, 24, 16, 0.96);
+  border: 1px solid rgba(196, 154, 87, 0.35);
+  border-radius: 14px;
+  padding: 16px 18px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+  color: #f1e7d0;
+  z-index: 40;
+  font-family: 'Inter', sans-serif;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(196, 154, 87, 0.2);
+}
+
+.title {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+  color: #fff8e1;
+  letter-spacing: 0.01em;
+}
+
+.collapseBtn {
+  background: transparent;
+  border: 1px solid rgba(196, 154, 87, 0.3);
+  color: rgba(241, 231, 208, 0.7);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.collapseBtn:hover {
+  border-color: #c49a57;
+  color: #c49a57;
+}
+
+.empty {
+  text-align: center;
+  padding: 22px 8px;
+  color: rgba(241, 231, 208, 0.7);
+  font-family: 'EB Garamond', Georgia, serif;
+}
+
+.empty p {
+  margin: 0 0 4px;
+  font-style: italic;
+}
+
+.emptyHint {
+  font-size: 13px;
+  opacity: 0.65;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.tab {
+  flex: 1;
+  background: transparent;
+  border: 1px solid rgba(196, 154, 87, 0.3);
+  color: rgba(241, 231, 208, 0.7);
+  padding: 7px 0;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.tab:hover { color: #c49a57; }
+
+.tabActive {
+  background: rgba(196, 154, 87, 0.18);
+  color: #fff8e1;
+  border-color: #c49a57;
+}
+
+/* Net totals view */
+
+.netList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.netRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  border: 1px solid rgba(196, 154, 87, 0.1);
+}
+
+.netName {
+  flex: 1;
+  font-family: 'EB Garamond', serif;
+  font-size: 15px;
+  color: #f1e7d0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.netValue {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.netPos {
+  color: #7fc777;
+}
+
+.netNeg {
+  color: #e57c8a;
+}
+
+.netZero {
+  color: rgba(241, 231, 208, 0.4);
+}
+
+/* Matrix view */
+
+.matrixWrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.matrixHint {
+  font-size: 11px;
+  font-style: italic;
+  color: rgba(241, 231, 208, 0.55);
+  margin-bottom: 10px;
+  font-family: 'EB Garamond', serif;
+}
+
+.matrixHint em {
+  font-style: italic;
+  color: #c49a57;
+}
+
+.matrix {
+  border-collapse: separate;
+  border-spacing: 4px;
+  width: 100%;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.matrix th, .matrix td {
+  padding: 6px 4px;
+  text-align: center;
+  border-radius: 6px;
+}
+
+.colHeader, .rowHeader {
+  background: transparent;
+  padding: 4px !important;
+}
+
+.cellPositive {
+  background: rgba(127, 199, 119, 0.14);
+  color: #7fc777;
+  border: 1px solid rgba(127, 199, 119, 0.25);
+  font-weight: 600;
+  min-width: 32px;
+}
+
+.cellEmpty {
+  background: rgba(0, 0, 0, 0.18);
+  color: rgba(241, 231, 208, 0.25);
+  border: 1px solid rgba(196, 154, 87, 0.08);
+  min-width: 32px;
+}
+
+.diagonal {
+  background: rgba(196, 154, 87, 0.05);
+  color: rgba(196, 154, 87, 0.3);
+  min-width: 32px;
+}
+
+/* Collapsed state — a thin tab on the right side */
+
+.collapsedTab {
+  position: fixed;
+  right: 0;
+  top: 90px;
+  background: rgba(10, 24, 16, 0.92);
+  border: 1px solid rgba(196, 154, 87, 0.4);
+  border-right: none;
+  border-radius: 10px 0 0 10px;
+  padding: 12px 8px;
+  cursor: pointer;
+  color: #c49a57;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Inter', sans-serif;
+}
+
+.collapsedTab:hover {
+  background: rgba(10, 24, 16, 1);
+  border-color: #c49a57;
+}
+
+.collapsedIcon {
+  font-size: 20px;
+}
+
+.collapsedLabel {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* Mobile: stack the scoreboard below the action area instead of overlapping it */
+@media (max-width: 900px) {
+  .panel {
+    position: static;
+    width: auto;
+    max-height: none;
+    margin: 24px 0 0;
+  }
+  .collapsedTab {
+    position: static;
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+    padding: 10px 0;
+    margin: 20px 0 0;
+    border-radius: 10px;
+    border-right: 1px solid rgba(196, 154, 87, 0.4);
+  }
+  .collapsedLabel {
+    writing-mode: horizontal-tb;
+    transform: none;
+  }
+}
