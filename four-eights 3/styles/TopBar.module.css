@@ -1,0 +1,129 @@
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: rgba(5, 13, 9, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(196, 154, 87, 0.2);
+}
+
+.left { display: flex; align-items: center; }
+
+.brand {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #c49a57;
+  letter-spacing: 0.05em;
+}
+
+.right {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  background: transparent;
+  border: 1px solid rgba(196, 154, 87, 0.4);
+  color: #f1e7d0;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 150ms, border-color 150ms;
+}
+
+.btn:hover:not(:disabled) {
+  background: rgba(196, 154, 87, 0.15);
+  border-color: #c49a57;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btnActive {
+  background: rgba(196, 154, 87, 0.2);
+  border-color: #c49a57;
+  color: #fff8e1;
+}
+
+/* Confirm modal */
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal {
+  background: rgba(10, 24, 16, 0.98);
+  border: 1px solid #c49a57;
+  border-radius: 14px;
+  padding: 28px 32px;
+  max-width: 440px;
+  color: #f1e7d0;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+}
+
+.modal h3 {
+  font-family: 'EB Garamond', serif;
+  font-size: 26px;
+  margin: 0 0 12px;
+  color: #fff8e1;
+}
+
+.modal p {
+  font-family: 'EB Garamond', serif;
+  font-size: 16px;
+  line-height: 1.55;
+  margin: 0 0 22px;
+  color: rgba(241, 231, 208, 0.85);
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.cancelBtn,
+.leaveBtn {
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+}
+
+.cancelBtn {
+  background: transparent;
+  color: #c49a57;
+  border: 1px solid #c49a57;
+}
+
+.leaveBtn {
+  background: #6b0f1a;
+  color: #fff;
+}
+
+.leaveBtn:hover { background: #8a1424; }
