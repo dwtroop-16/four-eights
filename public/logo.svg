@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <!--
+    Fours & Eights — primary logo (D1 classic monogram)
+    Dimensions: 800 × 800 (square format, scales infinitely)
+    Typeface: EB Garamond (loaded from Google Fonts at usage site)
+    Colors: deep felt green background, warm gold foreground
+    
+    Brand palette:
+      Felt:  #0c2418  (background)
+      Gold (highlight): #ffe9a8
+      Gold (mid):       #c49a57
+      Gold (deep):      #5e451d
+  -->
+  <defs>
+    <!-- Vertical gradient for the main wordmark (light at top, deeper at bottom) -->
+    <linearGradient id="gold-vertical" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#ffe9a8"/>
+      <stop offset="50%"  stop-color="#c49a57"/>
+      <stop offset="100%" stop-color="#5e451d"/>
+    </linearGradient>
+    
+    <!-- Lighter gradient for secondary elements (suits, footer) -->
+    <linearGradient id="gold-soft" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#e8c178"/>
+      <stop offset="100%" stop-color="#8c6628"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="800" fill="#0c2418"/>
+  
+  <!-- Top suit ornaments -->
+  <g font-family="EB Garamond, Georgia, serif" font-size="44" fill="url(#gold-soft)" text-anchor="middle">
+    <text x="265" y="170">♠</text>
+    <text x="355" y="170">♥</text>
+    <text x="445" y="170">♦</text>
+    <text x="535" y="170">♣</text>
+  </g>
+  
+  <!-- Top hairline divider -->
+  <line x1="160" y1="220" x2="640" y2="220" stroke="#c49a57" stroke-width="1" opacity="0.7"/>
+  
+  <!-- Main wordmark: 4 & 8 -->
+  <!-- The ampersand sits a touch lower than the digits and is sized to harmonize visually -->
+  <g font-family="EB Garamond, Georgia, serif" text-anchor="middle" fill="url(#gold-vertical)">
+    <text x="225" y="450" font-size="280" font-weight="600">4</text>
+    <text x="400" y="455" font-size="230" font-weight="400" font-style="italic">&amp;</text>
+    <text x="575" y="450" font-size="280" font-weight="600">8</text>
+  </g>
+  
+  <!-- Bottom hairline divider -->
+  <line x1="160" y1="560" x2="640" y2="560" stroke="#c49a57" stroke-width="1" opacity="0.7"/>
+  
+  <!-- Footer wordmark -->
+  <text x="400" y="615"
+        font-family="EB Garamond, Georgia, serif"
+        font-size="32" font-weight="600"
+        letter-spacing="8"
+        text-anchor="middle"
+        fill="url(#gold-soft)">FOURS &amp; EIGHTS</text>
+  
+  <!-- Italic tagline -->
+  <text x="400" y="665"
+        font-family="EB Garamond, Georgia, serif"
+        font-size="20" font-style="italic"
+        letter-spacing="2"
+        text-anchor="middle"
+        fill="#c49a57"
+        opacity="0.85">wild card · pot rollover</text>
+</svg>

@@ -7,6 +7,7 @@ import Avatar from '../components/Avatar';
 import AvatarPicker from '../components/AvatarPicker';
 import TurnTimer from '../components/TurnTimer';
 import TopBar from '../components/TopBar';
+import Scoreboard from '../components/Scoreboard';
 import styles from '../styles/Table.module.css';
 
 const DEFAULT_AVATAR = { kind: 'preset', emoji: '🦊', color: '#c49a57' };
@@ -19,6 +20,7 @@ export default function Home() {
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState(null);
   const [selectedDiscards, setSelectedDiscards] = useState(new Set());
+  const [scoreboardCollapsed, setScoreboardCollapsed] = useState(false);
 
   useEffect(() => {
     const s = getSocket();
@@ -187,6 +189,8 @@ export default function Home() {
               <li>Ties broken by drawing the top card.</li>
               <li>Losing IN-players owe the pot amount into the next round.</li>
               <li>One lone IN-player faces <em>The Bitch</em> — top 5 cards. She can hit five of a kind, beating four aces.</li>
+              <li>If The Bitch wins, the lone player replaces the pot into the next round.</li>
+              <li>If a player <em>beats</em> The Bitch, the game resets — fresh antes, no rollover.</li>
               <li>Solo Practice puts you head-to-head with the Bitch every hand.</li>
             </ul>
           </details>
@@ -304,6 +308,14 @@ export default function Home() {
               ? 'The Bitch takes it.'
               : room.lastResult.type === 'NO_PLAYERS'
               ? 'No takers. Pot carries.'
+              : room.lastResult.playerBeatBitch
+              ? (() => {
+                  const winners = room.lastResult.winnerIds
+                    .map((id) => room.players.find((p) => p.id === id)?.name)
+                    .filter(Boolean)
+                    .join(', ');
+                  return `${winners} beat The Bitch.`;
+                })()
               : (() => {
                   const winners = room.lastResult.winnerIds
                     .map((id) => room.players.find((p) => p.id === id)?.name)
@@ -314,12 +326,24 @@ export default function Home() {
           </h2>
           <div className={styles.resultDetail}>
             Pot of {room.lastResult.potAmount} chips.
-            {Object.keys(room.lastResult.rolloverOwed || {}).length > 0 && (
+            {room.lastResult.freshStart && (
+              <span> The game resets — next round everyone antes 1 fresh.</span>
+            )}
+            {!room.lastResult.freshStart && Object.keys(room.lastResult.rolloverOwed || {}).length > 0 && (
               <span>
                 {' '}Rollover next round:{' '}
                 {Object.entries(room.lastResult.rolloverOwed).map(([id, amt]) => {
                   const n = room.players.find((p) => p.id === id)?.name || 'Player';
                   return `${n} owes ${amt}`;
+                }).join(', ')}.
+              </span>
+            )}
+            {Object.keys(room.lastResult.buyInsThisRound || {}).length > 0 && (
+              <span>
+                {' '}Buy-ins granted:{' '}
+                {Object.entries(room.lastResult.buyInsThisRound).map(([id, amt]) => {
+                  const n = room.players.find((p) => p.id === id)?.name || 'Player';
+                  return `${n} +${amt}`;
                 }).join(', ')}.
               </span>
             )}
@@ -392,6 +416,12 @@ export default function Home() {
         {error && <div className={styles.error}>{error}</div>}
       </section>
       </div>
+      <Scoreboard
+        players={room.players}
+        ledger={room.ledger || {}}
+        collapsed={scoreboardCollapsed}
+        onToggleCollapse={() => setScoreboardCollapsed((v) => !v)}
+      />
     </>
   );
 }
