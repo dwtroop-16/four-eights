@@ -187,9 +187,11 @@ export default function Home() {
               <li>IN-players take turns discarding and redrawing any number.</li>
               <li>Best hand wins: four of a kind &gt; three &gt; pair.</li>
               <li>Ties broken by drawing the top card.</li>
-              <li>Losing IN-players owe the pot amount into the next round.</li>
+              <li>Multi-player: each losing IN-player replaces the full pot amount.</li>
+              <li>Bitch loss: the lone player replaces the full pot amount.</li>
+              <li>Folders don't contribute to the next hand.</li>
               <li>One lone IN-player faces <em>The Bitch</em> — top 5 cards. She can hit five of a kind, beating four aces.</li>
-              <li>If The Bitch wins, the lone player replaces the pot into the next round.</li>
+              <li>If The Bitch wins, the lone player pays the pot amount out of their stack. Both the original pot and their replacement carry to next round.</li>
               <li>If a player <em>beats</em> The Bitch, the game resets — fresh antes, no rollover.</li>
               <li>Solo Practice puts you head-to-head with the Bitch every hand.</li>
             </ul>
@@ -223,6 +225,7 @@ export default function Home() {
         paused={!!room.paused}
         phase={phase}
         roomId={room.roomId}
+        locked={!!room.lockedToNewJoiners}
         onReturnHome={returnHome}
         onSwitchRoom={switchRoom}
         onPauseToggle={togglePause}
@@ -250,6 +253,11 @@ export default function Home() {
           <div className={styles.gameTitle}>Fours &amp; Eights</div>
           <div className={styles.roomCode}>
             {isSoloMode ? 'Solo Practice' : `Room ${room.roomId}`} · Round {room.round || '—'}
+            {room.lockedToNewJoiners && !isSoloMode && (
+              <span style={{ marginLeft: 10, padding: '2px 8px', borderRadius: 999, background: 'rgba(179, 20, 42, 0.2)', color: '#e57c8a', border: '1px solid rgba(179, 20, 42, 0.5)', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                🔒 Locked — beat the Bitch to reopen
+              </span>
+            )}
           </div>
         </div>
         <div className={styles.potBox}>
@@ -335,6 +343,15 @@ export default function Home() {
                 {Object.entries(room.lastResult.rolloverOwed).map(([id, amt]) => {
                   const n = room.players.find((p) => p.id === id)?.name || 'Player';
                   return `${n} owes ${amt}`;
+                }).join(', ')}.
+              </span>
+            )}
+            {Object.keys(room.lastResult.buyInsThisRound || {}).length > 0 && (
+              <span>
+                {' '}Buy-ins granted:{' '}
+                {Object.entries(room.lastResult.buyInsThisRound).map(([id, amt]) => {
+                  const n = room.players.find((p) => p.id === id)?.name || 'Player';
+                  return `${n} +${amt}`;
                 }).join(', ')}.
               </span>
             )}

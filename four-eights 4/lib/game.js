@@ -34,6 +34,7 @@ const DECISION = {
 };
 
 const ANTE = 1;
+const BUY_IN_AMOUNT = 20; // auto-granted when a player can't cover their obligations
 const MAX_PLAYERS = 10;
 const TURN_TIMEOUT_MS = 30_000;
 
@@ -49,7 +50,10 @@ function createRoom(roomId, hostId, mode = 'multi') {
     rolloverOwed: {},
     deck: [],
     paused: false,
-    pausedRemainingMs: null, // saved time-left when paused mid-turn
+    pausedRemainingMs: null,
+    // When true, no new players may join. Set when the Bitch wins a hand;
+    // cleared when a player beats the Bitch.
+    lockedToNewJoiners: false, // saved time-left when paused mid-turn
     // ledger[winnerId][loserId] = total chips winnerId has won from loserId
     // The Bitch is represented as the pseudo-player id '__BITCH__'.
     // ledger is symmetric in storage: we update both ledger[A][B] and ledger[B][A]
@@ -70,6 +74,9 @@ function createRoom(roomId, hostId, mode = 'multi') {
 
 function addPlayer(room, playerId, name, avatar, startingChips = 100) {
   if (room.players.find((p) => p.id === playerId)) return room;
+  if (room.lockedToNewJoiners) {
+    throw new Error('This room is locked. Someone must beat The Bitch before new players can join.');
+  }
   const isMulti = room.mode === 'multi';
   const cap = isMulti ? MAX_PLAYERS : 1;
   if (room.players.length >= cap) {
@@ -83,6 +90,9 @@ function addPlayer(room, playerId, name, avatar, startingChips = 100) {
     name: name || `Player ${seatIndex + 1}`,
     avatar: validateAvatar(avatar) || defaultAvatar(seatIndex),
     chips: startingChips,
+    startingChips, // frozen at join time so chip-delta math is stable
+    buyIns: 0, // total extra chips granted from auto buy-ins
+    freeCredits: 0, // ante-free credits earned by folding
     decision: DECISION.PENDING,
     hand: [],
     hasDrawn: false,
@@ -178,25 +188,33 @@ function startRound(room) {
   // their contribution this round includes that rollover, and the carryPot
   // portion was already attributed in the round it was originally collected.
   room.potContributions = {};
+  // buyInsThisRound tracks who got a buy-in during this round's ante collection,
+  // for the result message so players see what happened.
+  room.buyInsThisRound = {};
+  // freeAntesUsedThisRound tracks who spent a free credit, for the result message.
+  room.freeAntesUsedThisRound = {};
   for (const p of room.players) {
     if (!p.connected) continue;
     const owed = room.rolloverOwed[p.id] || 0;
-    const contribution = ANTE + owed;
-    if (p.chips < contribution) {
-      // Insufficient chips: fold them out automatically with whatever they can pay
-      const pay = Math.min(p.chips, contribution);
-      p.chips -= pay;
-      pot += pay;
-      room.potContributions[p.id] = (room.potContributions[p.id] || 0) + pay;
-      p.decision = DECISION.OUT;
-      p.hand = [];
-      p.hasDrawn = false;
-      p.discardCount = null;
-      continue;
+    // Free credit waives the $1 ante but NOT rollover debt.
+    let anteDue = ANTE;
+    if (anteDue > 0 && (p.freeCredits || 0) > 0) {
+      p.freeCredits -= 1;
+      room.freeAntesUsedThisRound[p.id] = (room.freeAntesUsedThisRound[p.id] || 0) + ANTE;
+      anteDue = 0;
+    }
+    const contribution = anteDue + owed;
+    // Auto buy-in when the player can't cover their obligation.
+    while (p.chips < contribution) {
+      p.chips += BUY_IN_AMOUNT;
+      p.buyIns += BUY_IN_AMOUNT;
+      room.buyInsThisRound[p.id] = (room.buyInsThisRound[p.id] || 0) + BUY_IN_AMOUNT;
     }
     p.chips -= contribution;
     pot += contribution;
-    room.potContributions[p.id] = (room.potContributions[p.id] || 0) + contribution;
+    if (contribution > 0) {
+      room.potContributions[p.id] = (room.potContributions[p.id] || 0) + contribution;
+    }
     p.decision = DECISION.PENDING;
     p.hand = [];
     p.hasDrawn = false;
@@ -261,18 +279,30 @@ function advanceTurn(room) {
 function transitionAfterDecisions(room) {
   const insiders = room.players.filter((p) => p.connected && p.decision === DECISION.IN);
   if (insiders.length === 0) {
-    // Nobody played. Carry the pot.
+    // Nobody played. Carry the pot. Every folder earns a free-ante credit.
     room.phase = PHASE.SETTLE;
     room.activePlayerId = null;
     room.turnDeadline = null;
     room.carryPot = (room.carryPot || 0) + room.pot;
+    const freeAntesGranted = {};
+    for (const p of room.players) {
+      if (p.decision === DECISION.OUT) {
+        p.freeCredits = (p.freeCredits || 0) + 1;
+        freeAntesGranted[p.id] = 1;
+      }
+    }
     room.lastResult = {
       type: 'NO_PLAYERS',
       message: 'Nobody stayed in. Pot carries to next round.',
       potAmount: room.pot,
       rolloverOwed: {},
       evaluations: [],
+      buyInsThisRound: { ...(room.buyInsThisRound || {}) },
+      freeAntesUsedThisRound: { ...(room.freeAntesUsedThisRound || {}) },
+      freeCreditsGranted: freeAntesGranted,
     };
+    room.buyInsThisRound = {};
+    room.freeAntesUsedThisRound = {};
     room.pot = 0;
     return;
   }
@@ -398,13 +428,36 @@ function settle(room, entries, winnerIds, tiebreakDraws) {
   const contributions = { ...room.potContributions };
 
   if (winnerIsBitch) {
-    // Bitch wins: the lone IN-player must replace what was in the pot.
-    // The Bitch is not a ledger participant — no ledger entries are made.
-    // The chips stay in the game as carryPot and rollover debt.
+    // Bitch wins: the lone IN-player replaces the pot amount immediately by
+    // paying it out of their chip stack. The original pot AND the replacement
+    // both carry into the next round, so if pot was $3, next round starts
+    // with $6 sitting in it. Folders (players who chose OUT) earn a free-play
+    // credit for the next round. Credits stack across consecutive
+    // Bitch wins.
     const loser = insiders[0];
-    if (loser) room.rolloverOwed[loser.id] = potAmount;
-    room.carryPot = (room.carryPot || 0) + potAmount;
+    if (loser) {
+      // Trigger buy-in if they can't afford to replace the pot
+      while (loser.chips < potAmount) {
+        loser.chips += BUY_IN_AMOUNT;
+        loser.buyIns += BUY_IN_AMOUNT;
+        room.buyInsThisRound = room.buyInsThisRound || {};
+        room.buyInsThisRound[loser.id] = (room.buyInsThisRound[loser.id] || 0) + BUY_IN_AMOUNT;
+      }
+      loser.chips -= potAmount;
+    }
+    // Both the original pot and the replacement carry to next round.
+    room.carryPot = (room.carryPot || 0) + potAmount * 2;
     room.pot = 0;
+
+    // Grant a free-play credit to every folder (players who chose OUT).
+    for (const p of room.players) {
+      if (p.decision === DECISION.OUT) {
+        p.freeCredits = (p.freeCredits || 0) + 1;
+      }
+    }
+
+    // Lock the room to new joiners until a player beats the Bitch.
+    room.lockedToNewJoiners = true;
   } else {
     const humanWinners = winnerIds.filter((id) => id !== '__BITCH__');
     const share = Math.floor(potAmount / humanWinners.length);
@@ -419,31 +472,57 @@ function settle(room, entries, winnerIds, tiebreakDraws) {
       // FRESH-START RULE: when a human beats the Bitch, the game resets cleanly.
       // No rollover debts carry, the carryPot is wiped.
       // Everyone who wants to play the next round antes 1 fresh.
+      // Also unlocks the room to new joiners.
+      // Folders still earn a free-play credit for their fold.
       room.rolloverOwed = {};
       room.carryPot = 0;
+      room.lockedToNewJoiners = false;
+
+      for (const p of room.players) {
+        if (p.decision === DECISION.OUT) {
+          p.freeCredits = (p.freeCredits || 0) + 1;
+        }
+      }
 
       // Ledger: the human winner wins each contributor's contribution.
-      // (Their own contribution doesn't count as winning from themselves.)
       const winnerId = humanWinners[0];
       for (const [playerId, amount] of Object.entries(contributions)) {
         if (playerId === winnerId) continue;
         addLedgerEntry(room, winnerId, playerId, amount);
       }
     } else {
-      // Normal multi-player showdown: losing IN-players each owe the pot
-      // amount into the next round (preserves existing rollover mechanic).
+      // Normal multi-player showdown (no Bitch): each losing IN-player must
+      // replace the full pot amount immediately out of their chip stack.
+      // Winners keep the pot chips; losers pay $potAmount each. Those
+      // replacement chips carry into the next round.
+      // Folders don't contribute anything more — they already paid their ante
+      // this round and get to play next round without paying (silent no-ante
+      // mechanic).
+      let replacementCarry = 0;
       for (const p of insiders) {
-        if (!winnerIds.includes(p.id)) {
-          room.rolloverOwed[p.id] = potAmount;
+        if (winnerIds.includes(p.id)) continue;
+        // This losing IN-player must pay `potAmount` right now.
+        while (p.chips < potAmount) {
+          p.chips += BUY_IN_AMOUNT;
+          p.buyIns += BUY_IN_AMOUNT;
+          room.buyInsThisRound = room.buyInsThisRound || {};
+          room.buyInsThisRound[p.id] = (room.buyInsThisRound[p.id] || 0) + BUY_IN_AMOUNT;
+        }
+        p.chips -= potAmount;
+        replacementCarry += potAmount;
+      }
+      room.carryPot = (room.carryPot || 0) + replacementCarry;
+      // No rollover debts — payments are immediate.
+      room.rolloverOwed = {};
+
+      // Folders earn a free-play credit.
+      for (const p of room.players) {
+        if (p.decision === DECISION.OUT) {
+          p.freeCredits = (p.freeCredits || 0) + 1;
         }
       }
 
-      // Ledger: winners split the pot, so distribute the winnings against
-      // contributors proportional to each winner's share.
-      // For simplicity, attribute the full contribution to the (single)
-      // top winner — humanWinners.length is normally 1 because true ties
-      // resolve via tiebreak draws. If somehow we still have multiple
-      // winners, we split the credit evenly across them.
+      // Ledger: attribute contributions to the winner(s).
       const winnerCount = humanWinners.length;
       for (const [playerId, amount] of Object.entries(contributions)) {
         if (humanWinners.includes(playerId)) continue;
@@ -460,6 +539,14 @@ function settle(room, entries, winnerIds, tiebreakDraws) {
   // Clear the per-round contributions snapshot (we've consumed it for ledger updates)
   room.potContributions = {};
 
+  // Snapshot which folders got credits this round (for the result message)
+  const freeCreditsGranted = {};
+  for (const p of room.players) {
+    if (p.decision === DECISION.OUT) {
+      freeCreditsGranted[p.id] = 1;
+    }
+  }
+
   room.lastResult = {
     type: winnerIsBitch ? 'BITCH_WINS' : (playerBeatBitch ? 'PLAYER_BEAT_BITCH' : 'PLAYER_WINS'),
     winnerIds: winnerIds.filter((id) => id !== '__BITCH__'),
@@ -467,6 +554,7 @@ function settle(room, entries, winnerIds, tiebreakDraws) {
     playerBeatBitch,
     freshStart: playerBeatBitch,
     bitchHand: room.bitchHand,
+    freeCreditsGranted,
     evaluations: entries.map((e) => ({
       playerId: e.playerId,
       category: e.evaluation.category,
@@ -477,7 +565,12 @@ function settle(room, entries, winnerIds, tiebreakDraws) {
     potAmount,
     carryClearedAmount: playerBeatBitch ? carryBefore : 0,
     rolloverOwed: { ...room.rolloverOwed },
+    buyInsThisRound: { ...(room.buyInsThisRound || {}) },
+    freeAntesUsedThisRound: { ...(room.freeAntesUsedThisRound || {}) },
   };
+  // Consumed — next round will populate fresh
+  room.buyInsThisRound = {};
+  room.freeAntesUsedThisRound = {};
 }
 
 function viewForPlayer(room, playerId) {
@@ -489,6 +582,7 @@ function viewForPlayer(room, playerId) {
     paused: !!room.paused,
     pot: room.pot,
     carryPot: room.carryPot || 0,
+    lockedToNewJoiners: !!room.lockedToNewJoiners,
     round: room.round,
     dealerIndex: room.dealerIndex,
     activePlayerId: room.activePlayerId,
@@ -500,6 +594,9 @@ function viewForPlayer(room, playerId) {
       name: p.name,
       avatar: p.avatar,
       chips: p.chips,
+      startingChips: p.startingChips ?? 100,
+      buyIns: p.buyIns ?? 0,
+      freeCredits: p.freeCredits ?? 0,
       decision: p.decision,
       hasDrawn: p.hasDrawn,
       discardCount: p.discardCount,
