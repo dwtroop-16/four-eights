@@ -92,7 +92,7 @@ function addPlayer(room, playerId, name, avatar, startingChips = 100) {
     chips: startingChips,
     startingChips, // frozen at join time so chip-delta math is stable
     buyIns: 0, // total extra chips granted from auto buy-ins
-    freeCredits: 0, // ante-free rounds earned when in the room during a Bitch win
+    freeCredits: 0, // ante-free credits earned by folding
     decision: DECISION.PENDING,
     hand: [],
     hasDrawn: false,
@@ -203,7 +203,7 @@ function startRound(room) {
       room.freeAntesUsedThisRound[p.id] = (room.freeAntesUsedThisRound[p.id] || 0) + ANTE;
       anteDue = 0;
     }
-    let contribution = anteDue + owed;
+    const contribution = anteDue + owed;
     // Auto buy-in when the player can't cover their obligation.
     while (p.chips < contribution) {
       p.chips += BUY_IN_AMOUNT;
@@ -492,21 +492,25 @@ function settle(room, entries, winnerIds, tiebreakDraws) {
       }
     } else {
       // Normal multi-player showdown (no Bitch): each losing IN-player must
-      // replace the pot amount immediately out of their chip stack.
-      // Replacement chips carry to next round.
+      // replace ONLY THEIR OWN CONTRIBUTION to the pot (not the full pot).
+      // Their contribution is what they put in during this round's ante
+      // collection (ante + any prior rollover, historically). Replacement
+      // chips carry to next round.
       // Folders earn a free-play credit for the next round.
       let replacementCarry = 0;
       for (const p of insiders) {
         if (winnerIds.includes(p.id)) continue;
-        // This losing IN-player must pay `potAmount` right now.
-        while (p.chips < potAmount) {
+        const contribution = contributions[p.id] || 0;
+        if (contribution <= 0) continue;
+        // This losing IN-player must pay their own contribution right now.
+        while (p.chips < contribution) {
           p.chips += BUY_IN_AMOUNT;
           p.buyIns += BUY_IN_AMOUNT;
           room.buyInsThisRound = room.buyInsThisRound || {};
           room.buyInsThisRound[p.id] = (room.buyInsThisRound[p.id] || 0) + BUY_IN_AMOUNT;
         }
-        p.chips -= potAmount;
-        replacementCarry += potAmount;
+        p.chips -= contribution;
+        replacementCarry += contribution;
       }
       room.carryPot = (room.carryPot || 0) + replacementCarry;
       // No rollover debts — payments are immediate.

@@ -187,10 +187,11 @@ export default function Home() {
               <li>IN-players take turns discarding and redrawing any number.</li>
               <li>Best hand wins: four of a kind &gt; three &gt; pair.</li>
               <li>Ties broken by drawing the top card.</li>
-              <li>Losing IN-players each pay the pot amount from their stack; those chips carry to the next round.</li>
-              <li>Folders earn a free-ante credit for the next round.</li>
+              <li>Multi-player: losing IN-players replace only their own contribution to the pot.</li>
+              <li>Bitch loss: the lone player replaces the full pot amount.</li>
+              <li>Folders don't contribute to the next hand.</li>
               <li>One lone IN-player faces <em>The Bitch</em> — top 5 cards. She can hit five of a kind, beating four aces.</li>
-              <li>If The Bitch wins, the lone player pays the pot amount out of their stack. Both the original pot and their replacement carry to next round, and everyone in the room earns a free-ante credit.</li>
+              <li>If The Bitch wins, the lone player pays the pot amount out of their stack. Both the original pot and their replacement carry to next round.</li>
               <li>If a player <em>beats</em> The Bitch, the game resets — fresh antes, no rollover.</li>
               <li>Solo Practice puts you head-to-head with the Bitch every hand.</li>
             </ul>
@@ -345,24 +346,6 @@ export default function Home() {
                 }).join(', ')}.
               </span>
             )}
-            {Object.keys(room.lastResult.freeAntesUsedThisRound || {}).length > 0 && (
-              <span>
-                {' '}Free antes used:{' '}
-                {Object.entries(room.lastResult.freeAntesUsedThisRound).map(([id]) => {
-                  const n = room.players.find((p) => p.id === id)?.name || 'Player';
-                  return n;
-                }).join(', ')}.
-              </span>
-            )}
-            {Object.keys(room.lastResult.freeCreditsGranted || {}).length > 0 && (
-              <span>
-                {' '}Free credits earned by folders:{' '}
-                {Object.entries(room.lastResult.freeCreditsGranted).map(([id]) => {
-                  const n = room.players.find((p) => p.id === id)?.name || 'Player';
-                  return n;
-                }).join(', ')}.
-              </span>
-            )}
             {Object.keys(room.lastResult.buyInsThisRound || {}).length > 0 && (
               <span>
                 {' '}Buy-ins granted:{' '}
@@ -385,14 +368,7 @@ export default function Home() {
               {isHost && <span className={styles.hostStar}> ★</span>}
               {dealerId === me.playerId && <span className={styles.dealerStar}> D</span>}
             </div>
-            <div className={styles.youChips}>
-              {youPlayer?.chips} chips
-              {youPlayer?.freeCredits > 0 && (
-                <span style={{ marginLeft: 10, padding: '2px 8px', borderRadius: 999, background: 'rgba(127,199,119,0.18)', color: '#7fc777', border: '1px solid rgba(127,199,119,0.4)', fontSize: 11, fontWeight: 700 }}>
-                  🎟 {youPlayer.freeCredits} free {youPlayer.freeCredits > 1 ? 'antes' : 'ante'}
-                </span>
-              )}
-            </div>
+            <div className={styles.youChips}>{youPlayer?.chips} chips</div>
           </div>
           {isYourTurn && room.turnDeadline && (
             <TurnTimer deadline={room.turnDeadline} />

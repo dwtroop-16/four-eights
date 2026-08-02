@@ -25,14 +25,7 @@ export default function Seat({ player, isYou, isHost, isDealer, isActive, turnDe
             {isHost && <span className={styles.hostTag} title="Host">★</span>}
             {isDealer && <span className={styles.dealerTag} title="Dealer">D</span>}
           </div>
-          <div className={styles.chips}>
-            {player.chips} chips
-            {player.freeCredits > 0 && (
-              <span className={styles.freeBadge} title={`${player.freeCredits} free-play credit${player.freeCredits > 1 ? 's' : ''}`}>
-                🎟 {player.freeCredits}
-              </span>
-            )}
-          </div>
+          <div className={styles.chips}>{player.chips} chips</div>
         </div>
         {isActive && turnDeadline && (
           <TurnTimer deadline={turnDeadline} />
