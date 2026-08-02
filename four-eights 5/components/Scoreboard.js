@@ -1,12 +1,11 @@
 // components/Scoreboard.js
-// Always-visible per-pair ledger sidebar.
-//
-// Shows two views:
-//   1. NET TOTALS — each player's net position vs. all others combined,
-//      plus The Bitch's running take from the room.
-//   2. PER-PAIR LEDGER — a matrix showing "Row has won N from Column".
-//
-// The scoreboard reads from room.ledger which is updated on settle.
+// Always-visible scoreboard sidebar with four views:
+//   Chips   - current chip stacks (includes buy-in indicators)
+//   Delta   - true chip movement: chips - startingChips - buyIns
+//             (a "-45" here means you're actually down 45 from your starting position,
+//              accounting for any auto buy-ins you took)
+//   Net     - peer-only won/lost totals (excludes Bitch losses)
+//   Pairs   - full per-pair ledger matrix
 
 import { useState } from 'react';
 import Avatar from './Avatar';
@@ -15,8 +14,6 @@ import styles from '../styles/Scoreboard.module.css';
 const BITCH_ID = '__BITCH__';
 
 function computeNetTotals(ledger, participantIds) {
-  // For each participant: total won - total lost (across all opponents).
-  // Bitch entries (if any historical state has them) are ignored.
   const net = {};
   for (const id of participantIds) net[id] = 0;
   for (const winnerId of Object.keys(ledger)) {
@@ -30,17 +27,21 @@ function computeNetTotals(ledger, participantIds) {
   return net;
 }
 
+function computeChipDelta(p) {
+  const starting = p.startingChips ?? 100;
+  const buyIns = p.buyIns ?? 0;
+  return (p.chips ?? 0) - starting - buyIns;
+}
+
 export default function Scoreboard({ players, ledger, collapsed, onToggleCollapse }) {
-  // Three views: 'chips' (current stacks), 'net' (won/lost totals), 'matrix' (per-pair ledger)
   const [view, setView] = useState('chips');
 
-  // The Bitch is not a ledger participant. Scoreboard shows real players only.
   const allPlayers = players;
   const ids = allPlayers.map((p) => p.id);
   const net = computeNetTotals(ledger, ids);
 
-  // Sort: chips view sorts by chip count desc; net view by net desc
   const sortedByChips = [...allPlayers].sort((a, b) => (b.chips || 0) - (a.chips || 0));
+  const sortedByDelta = [...allPlayers].sort((a, b) => computeChipDelta(b) - computeChipDelta(a));
   const sortedByNet = [...allPlayers].sort((a, b) => (net[b.id] || 0) - (net[a.id] || 0));
 
   if (collapsed) {
@@ -71,6 +72,13 @@ export default function Scoreboard({ players, ledger, collapsed, onToggleCollaps
         </button>
         <button
           type="button"
+          className={`${styles.tab} ${view === 'delta' ? styles.tabActive : ''}`}
+          onClick={() => setView('delta')}
+        >
+          Delta
+        </button>
+        <button
+          type="button"
           className={`${styles.tab} ${view === 'net' ? styles.tabActive : ''}`}
           onClick={() => setView('net')}
         >
@@ -91,14 +99,49 @@ export default function Scoreboard({ players, ledger, collapsed, onToggleCollaps
             <div key={p.id} className={styles.netRow}>
               <Avatar avatar={p.avatar} size="sm" />
               <span className={styles.netName}>{p.name}</span>
-              <span className={styles.netValue}>{p.chips}</span>
+              <span className={styles.netValue}>
+                {p.chips}
+                {p.buyIns > 0 && (
+                  <span className={styles.buyInBadge} title={`Auto buy-ins: ${p.buyIns}`}>
+                    +{p.buyIns} BI
+                  </span>
+                )}
+              </span>
             </div>
           ))}
+          <div className={styles.footnote}>Buy-ins granted automatically when chips run out.</div>
+        </div>
+      )}
+
+      {view === 'delta' && (
+        <div className={styles.netList}>
+          <div className={styles.deltaHint}>
+            Chips gained or lost, counting buy-ins as debt.
+          </div>
+          {sortedByDelta.map((p) => {
+            const value = computeChipDelta(p);
+            return (
+              <div key={p.id} className={styles.netRow}>
+                <Avatar avatar={p.avatar} size="sm" />
+                <span className={styles.netName}>{p.name}</span>
+                <span
+                  className={`${styles.netValue} ${
+                    value > 0 ? styles.netPos : value < 0 ? styles.netNeg : styles.netZero
+                  }`}
+                >
+                  {value > 0 ? '+' : ''}{value}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
 
       {view === 'net' && (
         <div className={styles.netList}>
+          <div className={styles.deltaHint}>
+            Peer-to-peer only. Bitch losses aren't counted here.
+          </div>
           {sortedByNet.map((p) => {
             const value = net[p.id] || 0;
             return (

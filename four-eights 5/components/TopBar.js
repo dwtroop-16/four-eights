@@ -11,6 +11,7 @@ export default function TopBar({
   paused,
   phase,
   roomId,
+  locked,
   onReturnHome,
   onSwitchRoom,
   onPauseToggle,
@@ -63,8 +64,14 @@ export default function TopBar({
         </div>
         <div className={styles.right}>
           {inRoom && (
-            <button className={styles.btn} onClick={copyLink} title="Copy invite link">
-              {copied ? '✓ Copied' : 'Copy invite'}
+            <button
+              className={styles.btn}
+              onClick={copyLink}
+              title={locked ? 'Room is locked to new joiners until someone beats the Bitch' : 'Copy invite link'}
+              disabled={locked}
+              style={locked ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+            >
+              {locked ? '🔒 Locked' : copied ? '✓ Copied' : 'Copy invite'}
             </button>
           )}
           {inRoom && isHost && (
